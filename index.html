@@ -285,8 +285,8 @@
   </section>
 
   <nav class="tabs" id="tabs">
-    <button class="tab-btn active" data-cat="coffee">القهوة</button>
     <button class="tab-btn" data-cat="hot">مشروبات ساخنة</button>
+    <button class="tab-btn active" data-cat="coffee">القهوة</button>
     <button class="tab-btn" data-cat="shake">ميلك شيك</button>
     <button class="tab-btn" data-cat="juice">عصائر طازة</button>
     <button class="tab-btn" data-cat="cold">مشروبات باردة</button>
@@ -313,17 +313,6 @@
 
 <script>
 const MENU = {
-  hot: {
-    title: "القهوة",
-    items: [
-      { name:"قهوة تركي", price:30 },
-      { name:"فرنساوي", price:35 },
-      { name:"قهوة محوجه", price:35 },
-      { name:"قهوه غامق", price:35 },
-      { name:"إسبريسو (سنجل)", price:40 },
-      { name:"إسبريسو ( دبل)", price:65 },
-    ]
-  },
   hot: {
     title: "مشروبات ساخنة",
     items: [
@@ -359,6 +348,17 @@ const MENU = {
 
 
 
+    ]
+  },
+  coffee: {
+    title: "القهوة",
+    items: [
+      { name:"قهوة تركي", price:30 },
+      { name:"فرنساوي", price:35 },
+      { name:"قهوة محوجه", price:35 },
+      { name:"قهوه غامق", price:35 },
+      { name:"إسبريسو (سنجل)", price:40 },
+      { name:"إسبريسو ( دبل)", price:65 },
     ]
   },
   shake: {
