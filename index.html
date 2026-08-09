@@ -301,7 +301,13 @@
 <aside class="cart-drawer" id="cartDrawer">
   <div class="cart-head"><h3>🛒 سلة الطلب</h3><button class="cart-close" id="cartClose">×</button></div>
   <div class="cart-items" id="cartItems"></div>
-  <div class="cart-foot"><div class="cart-total"><span>الإجمالي</span><strong><span id="cartTotal">0</span> ج.م</strong></div><button class="order-btn" id="orderBtn">تأكيد الطلب</button></div>
+  <div class="cart-foot">
+  <label for="tableNumber" style="display:block;color:var(--muted);font-size:13px;margin-bottom:7px">رقم الترابيزة</label>
+  <input id="tableNumber" inputmode="numeric" placeholder="اكتب رقم الترابيزة"
+    style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0d100d;color:var(--cream);font-family:Tajawal;margin-bottom:12px;outline:none">
+  <div class="cart-total"><span>الإجمالي</span><strong><span id="cartTotal">0</span> ج.م</strong></div>
+  <button class="order-btn" id="orderBtn">تأكيد الطلب</button>
+</div>
 </aside>
 
 <main class="menu-wrap" id="menu"></main>
@@ -554,13 +560,84 @@ document.getElementById('cartFab').onclick=openCart;
 document.getElementById('cartClose').onclick=closeCart;
 document.getElementById('cartOverlay').onclick=closeCart;
 document.getElementById('orderBtn').onclick=()=>{
-  const entries=Object.values(cart);
-  if(!entries.length)return alert('السلة فاضية، اختار المشروبات الأول.');
-  const total=entries.reduce((s,i)=>s+i.price*i.qty,0);
-  alert('تم تجهيز طلبك\\n\\n'+entries.map(i=>`• ${i.name} × ${i.qty}`).join('\\n')+`\\n\\nالإجمالي: ${total} ج.م`);
+  if(typeof window.sendOrderToFirebase === 'function'){
+    window.sendOrderToFirebase();
+  }else{
+    alert('جاري تجهيز الاتصال بالطلبات، حاول مرة أخرى بعد ثانية.');
+  }
 };
 loadCart();updateCart();
 
 </script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  import { getDatabase, ref, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUmD3X5g2eSy5eL3U9R3IPZHnoWfpmYwI",
+    authDomain: "coffee-v10.firebaseapp.com",
+    databaseURL: "https://coffee-v10-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "coffee-v10",
+    storageBucket: "coffee-v10.firebasestorage.app",
+    messagingSenderId: "1056868199469",
+    appId: "1:1056868199469:web:e9a14e13085daaadb99ca4",
+    measurementId: "G-YC445CVSKK"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window.sendOrderToFirebase = async function(){
+    const entries = Object.values(cart);
+    if(!entries.length){
+      alert('السلة فاضية، اختار المشروبات الأول.');
+      return;
+    }
+
+    const table = document.getElementById('tableNumber').value.trim();
+    if(!table){
+      alert('اكتب رقم الترابيزة الأول.');
+      document.getElementById('tableNumber').focus();
+      return;
+    }
+
+    const items = entries.map(i => ({
+      name: i.name,
+      price: Number(i.price),
+      qty: Number(i.qty)
+    }));
+    const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+
+    const btn = document.getElementById('orderBtn');
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'جاري إرسال الطلب...';
+
+    try{
+      await push(ref(db, 'orders'), {
+        table,
+        items,
+        total,
+        createdAt: serverTimestamp(),
+        status: 'new'
+      });
+
+      Object.keys(cart).forEach(k => delete cart[k]);
+      saveCart();
+      updateCart();
+      document.getElementById('tableNumber').value = '';
+      closeCart();
+      alert('تم إرسال الطلب للمكان بنجاح ✅');
+    }catch(error){
+      console.error(error);
+      alert('حصلت مشكلة في إرسال الطلب. تأكد من الإنترنت وحاول تاني.');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  };
+</script>
+
 </body>
-</html>
+</html>++
