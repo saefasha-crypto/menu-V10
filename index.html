@@ -285,14 +285,15 @@
   </section>
 
   <nav class="tabs" id="tabs">
-    <button class="tab-btn" data-cat="hot">مشروبات ساخنة</button>
-    <button class="tab-btn active" data-cat="coffee">القهوة</button>
-    <button class="tab-btn" data-cat="shake">ميلك شيك</button>
+    <button class="tab-btn active" data-cat="hot">مشروبات ساخنة</button>
+    <button class="tab-btn" data-cat="coffee">القهوة</button>
     <button class="tab-btn" data-cat="juice">عصائر فريش</button>
-    <button class="tab-btn" data-cat="cold">مشروبات غازيه</button>
-    <button class="tab-btn" data-cat="shisha">الشيشة</button>
+    <button class="tab-btn" data-cat="cocktail">كوكتيلات</button>
+    <button class="tab-btn" data-cat="cold">مشروبات باردة</button>
+    <button class="tab-btn" data-cat="shake">ميلك شيك</button>
+    <button class="tab-btn" data-cat="waffle">وافل</button>
     <button class="tab-btn" data-cat="icecream">آيس كريم</button>
-    <button class="tab-btn" data-cat="waffle"> وافل</button>
+    <button class="tab-btn" data-cat="shisha">الشيشة</button>
   </nav>
 
   
@@ -322,196 +323,89 @@ const MENU = {
   hot: {
     title: "مشروبات ساخنة",
     items: [
-      { name:"شاي", price:15 },
-      { name:"ينسون", price:20 },
-      { name:"شاي فتله", price:20 },
-      { name:"جنزبيل", price:20},
-     { name:"قرفه", price:20},
-     { name:"لمون سخن  ", price:20},
-     { name:"شاي احمد تي ", price:25},
-    { name:"كركديه", price:25 },
-     { name:" كوفي مكس  ", price:25},
-     { name:" جنزبيل قرفه ", price:25 },
-     { name:" كوفي مكس حليب  ", price:40},
-      { name:"نسكافيه بلاك   ", price:25},
-      { name:" نسكافيه حليب  ", price:40  },
-              { name:" نسكافيه لاتيه- فنليا -كراميل-بندق", price:25},
-        { name:" نسكافيه لاتيه (حليب)-فنليا -كراميل-بندق", price:40},
-            { name:" سحلب ", price:35},
-             { name:"سحلب مكسرات ", price:55},
-           { name:"  سحلب فواكه  ", price:65},
-                 { name:" كاكاو  ", price:25},
-                     { name:" كاكا حليب ", price:40},
-      { name:" هوت سيزر", price:45 },
-
-
-
-
-
-
-
-
-
-
-
-
+      {name:"شاي",price:15},{name:"شاي فتلة",price:20},{name:"ينسون",price:20},
+      {name:"جنزبيل",price:20},{name:"قرفة",price:20},{name:"شاي أحمد تي",price:25},
+      {name:"كركديه",price:25},{name:"كاكاو",price:25},{name:"كاكاو حليب",price:40},
+      {name:"هوت سيدر",price:45},{name:"قهوة تركي",price:30},{name:"قهوة فرنساوي",price:35},
+      {name:"قهوة محوجة",price:35},{name:"قهوة غامق",price:35},{name:"إسبريسو سنجل",price:40},
+      {name:"إسبريسو دبل",price:65},{name:"نسكافيه بلاك",price:25},{name:"نسكافيه حليب",price:40},
+      {name:"نسكافيه لاتيه - فانيليا - كراميل - بندق",price:25},
+      {name:"نسكافيه لاتيه حليب - فانيليا - كراميل - بندق",price:40},
+      {name:"كوفي مكس",price:25},{name:"كوفي مكس حليب",price:40},
+      {name:"جنزبيل قرفة",price:25},{name:"سحلب",price:35},{name:"سحلب مكسرات",price:55},
+      {name:"سحلب فواكه",price:65}
     ]
   },
   coffee: {
     title: "القهوة",
     items: [
-      { name:"قهوة تركي", price:30 },
-      { name:"فرنساوي", price:35 },
-      { name:"قهوة محوجه", price:35 },
-      { name:"قهوه غامق", price:35 },
-      { name:"إسبريسو (سنجل)", price:40 },
-      { name:"إسبريسو ( دبل)", price:65 },
-    ]
-  },
-  shake: {
-    title: "ميلك شيك",
-    items: [
-      { name:"شوكولاتة", price:75 },
-      { name:"فانيليا", price:75 },
-      { name:"فراولة", price:75 },
-      { name:"أوريو", price:75 },
-      { name:"كراميل", price:75 },
-      { name:"موز", price:75 },
-       { name:"توت", price:75 },
-       { name:"كانتلوب", price:75 },
-       { name:"لوتس", price:75 },
-        { name:"مانجو", price:75 },
-         { name:"كيت كات", price:75 },
-         { name:"سنيكرز", price:75 },
-               { name:"كيوي", price:75 },
-               { name:"بياستشو", price:80 },
-
-
-
-
-              
-
-
-
-
-
-
-
-
+      {name:"قهوة تركي",price:30},{name:"قهوة فرنساوي",price:35},{name:"قهوة محوجة",price:35},
+      {name:"قهوة غامق",price:35},{name:"إسبريسو سنجل",price:40},{name:"إسبريسو دبل",price:65}
     ]
   },
   juice: {
     title: "عصائر فريش",
-    note: "إضافة سموذي : +5 جنيه",
     items: [
-      { name:"مانجا", price:70 },
-      { name:"فراولة", price:60 },
-      { name:"بطيخ", price:60 },
-      { name:"برتقال", price:60 },
-      { name:"كيوي", price:80 },
-      { name:"كانتلوب", price:70 },
-      { name:"جوافة", price:70 },
-      { name:" موز بالحليب ", price:55 },
-      { name:"ليمون بالنعناع", price:50 },
-      { name:"ليمون عادي", price:40 },
-      { name:"ليمون فرنساوي", price:50 },
-      { name:" لمون بالحليب", price:50 },
-            { name:" عناب", price:40 },
-
-
-            { name:" مهيتو فروله", price:70 },
-            { name:"مهيتو توت ", price: 70},
-            { name:"مهيتو بطيخ ", price: 70},
-            { name:"مهيتو كيوي ", price:70 },
-            { name:"مهيتو مانجو ", price:70 },
-            { name:"مهيتو برتقال ", price:70 },
-            { name:" مهيتو باشن فروت", price:70 },
-            { name:"مهيتو الاناناس ", price:70 },
-            { name:" مهيتو صن شاين", price:70 },
-            { name:"مهيتو بلوبيري ", price:70 },
-            { name:" مهيتو كوكونت", price:70 },
-            { name:" مهيتو ريدبول", price:90 },
-
-            
-
-
-
-
-
-
-
-
-
-
-
-
+      {name:"برتقال",price:60},{name:"مانجو",price:70},{name:"ليمون",price:40},
+      {name:"ليمون نعناع",price:50},{name:"ليمون نعناع فراولة",price:60},{name:"جوافة",price:70},
+      {name:"جوافة باللبن",price:80},{name:"فراولة",price:60},{name:"فراولة باللبن",price:75},
+      {name:"بلح باللبن",price:60},{name:"موز باللبن",price:55},{name:"بطيخ",price:60},
+      {name:"بطيخ بالنعناع",price:75},{name:"كيوي",price:80},{name:"كيوي عسل",price:90},
+      {name:"كيوي باللبن",price:100},{name:"كانتلوب",price:70},{name:"كانتلوب باللبن",price:85},
+      {name:"عناب",price:40}
+    ]
+  },
+  cocktail: {
+    title: "كوكتيلات",
+    items: [
+      {name:"بطيخ نعناع",price:70},{name:"مانجو آيس",price:70},{name:"صن شاين",price:70},
+      {name:"موهيتو",price:70},{name:"موهيتو (نكهة)",price:70},{name:"كانتلوب فانيليا",price:70},
+      {name:"جوافة نعناع",price:70},{name:"فيتامين سي",price:70},{name:"موز فراولة",price:70},
+      {name:"موز توت",price:70},{name:"مانجو خوخ",price:70},{name:"مانجو موز",price:70},
+      {name:"مانجو خوخ برتقال",price:70},{name:"مانجو كيوي",price:70}
     ]
   },
   cold: {
     title: "مشروبات باردة",
     items: [
-      { name:"ايس كوفي", price:65 },
-      { name:"ايس لاتيه", price:65 },
-      { name:"ايس موكا", price:65 },
-      { name:"ايس شوكليت", price:65 },
-       { name:"ايس سبانش لاتيه", price:65 },
-       { name:"ايس فانليا", price:65 },
-              { name:"فرابيه كلاسيك ", price:75 },
-               { name:"فرابيه شوكليت ", price:75 },
-                             { name:"فرابيه كراميل ", price:75 },
-              { name:"فرابيه نوتيلا ", price:75 },
-                            { name:"فرابيه لوتس ", price:75 },
-              { name:"فرابيه بيستاشيو ", price:75 },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      { name:"كولا -فانتا-سبرايت", price:35 },
-      { name:"فيوري", price:35 },
-      { name:"بيرل", price:40 },
-      { name:"فيروز", price:40 },
+      {name:"ايس كوفي",price:65},{name:"ايس كابتشينو",price:65},{name:"ايس موكا",price:65},
+      {name:"ايس شوكليت",price:65},{name:"ايس لاتيه",price:65},{name:"ايس بلو لاتيه",price:65},
+      {name:"ايس كيوي",price:65},{name:"ايس مانجو",price:65},
+      {name:"كولا",price:35},{name:"فانتا",price:35},{name:"اسبرايت",price:35},
+      {name:"بريل",price:40},{name:"فيروز",price:40},{name:"شوبس",price:40},
+      {name:"ريد بول",price:40},{name:"ستينج",price:35},{name:"مياه صغيرة",price:10}
     ]
   },
-  shisha: {
-    title: "الشيشة",
+  shake: {
+    title: "ميلك شيك",
     items: [
-      { name:" شيشه قص", price:15 },
-      { name:"  شيشيه سلوم", price:15 },
-       { name:" شيشيه زغلول ", price:25 },
-      { name:"حجر فواكه", price:50 },
+      {name:"ميلك شيك فانيليا / شوكليت",price:75},{name:"ميلك شيك أوريو",price:75},
+      {name:"ميلك شيك نوتيلا / كراميل",price:75},{name:"ميلك شيك لوتس",price:75},
+      {name:"ميلك شيك مانجو / فراولة / خوخ",price:75},{name:"ميلك شيك بلو بيري",price:75},
+      {name:"ميلك شيك كيوي",price:75},{name:"ميلك شيك كيت كات",price:75},
+      {name:"ميلك شيك سنيكرز",price:75},{name:"ميلك شيك بيستاشيو",price:80},
+      {name:"فروت سلاط",price:80},{name:"فروت سلاط + 2 بولة آيس كريم",price:100}
+    ]
+  },
+  waffle: {
+    title: "وافل",
+    items: [
+      {name:"وافل نوتيلا",price:60},{name:"وافل نوتيلا وايت",price:60},{name:"وافل لوتس",price:60},
+      {name:"وافل كيندر",price:60},{name:"وافل ميكس",price:65},{name:"وافل سنيكرز",price:65},
+      {name:"وافل بيستاشيو",price:70},{name:"وافل فور سيزون",price:90},{name:"وافل كراميل",price:70}
     ]
   },
   icecream: {
     title: "آيس كريم",
     items: [
-      { name:"بوله ", price:20 },
-      { name:"2بوله ", price:35 },
-      { name:"3 بوله ", price:55 },
+      {name:"1 بولة",price:20},{name:"2 بولة",price:35},{name:"3 بولة",price:55}
     ]
   },
-  waffle: {
-    title: " ووافل",
+  shisha: {
+    title: "الشيشة",
     items: [
-      { name:"وافل نوتيلا", price:60 },
-      { name:"وافل نوتيلا وايت ", price:60 },
-      { name:"وفل لوتس ", price:60 },
-      { name:"وافل كيندر  ", price:60 },
-       { name:" وافل ميكس  ", price:65 },
-      { name:"وفل بستاشيو", price:70 },
-      { name:"كراميل", price:70 },
+      {name:"شيشة قص",price:15},{name:"شيشة سلوم",price:15},{name:"شيشة زغلول",price:25},
+      {name:"حجر فواكه",price:50}
     ]
   }
 };
