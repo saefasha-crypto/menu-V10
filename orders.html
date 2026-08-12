@@ -34,19 +34,34 @@ button{font-family:inherit;cursor:pointer}
 .overlay.show{display:flex}.alert{background:#151b15;border:1px solid #c9a45c;border-radius:22px;padding:30px;text-align:center;width:min(390px,100%)}
 .bell{font-size:50px}.alert h2{color:#e2c98e;margin:10px}.alert p{color:var(--muted);margin-bottom:20px}
 .receive{padding:11px 25px;border:0;border-radius:12px;background:var(--olive);color:white;font-weight:bold}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 20px}
+.stat{background:linear-gradient(135deg,#171c17,#0e110e);border:1px solid var(--line);border-radius:16px;padding:16px}
+.stat small{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}.stat strong{font-size:23px;color:#e2c98e}.stat .green{color:#bfc8ad}
+.tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}.tab{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#111510;color:var(--muted)}.tab.active{background:rgba(201,164,92,.12);color:#e2c98e;border-color:rgba(201,164,92,.35)}
+.history{display:grid;gap:10px}.history-item{background:#111510;border:1px solid var(--line);border-radius:14px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px}.history-info{display:flex;gap:15px;align-items:center}.history-total{font-weight:bold;color:#e2c98e}.print{padding:8px 11px;border:1px solid rgba(201,164,92,.3);border-radius:9px;background:rgba(201,164,92,.06);color:#e2c98e}
+@media(max-width:700px){.stats{grid-template-columns:1fr}.history-item{align-items:flex-start}.history-info{flex-direction:column;align-items:flex-start;gap:4px}}
+@media print{body{background:white;color:#111}body>*:not(#printArea){display:none!important}#printArea{display:block!important;color:#111;padding:20px;font-family:Arial,sans-serif}#printArea h1{text-align:center;margin-bottom:5px}#printArea .muted{color:#666}.receipt{max-width:380px;margin:auto}.receipt-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #bbb}.receipt-total{font-size:20px;font-weight:bold;margin-top:12px}.no-print{display:none!important}}
+#printArea{display:none}
 @media(max-width:550px){.status{display:none}.top{align-items:flex-start}.foot{flex-direction:column;gap:10px}.done{width:100%}}
 </style>
 </head>
 <body>
 <header><div class="header"><div><h1>V10 Cafe</h1><div class="sub">شاشة استقبال الطلبات</div></div><div style="display:flex;gap:8px;align-items:center"><button id="soundBtn" class="clear">🔔 تفعيل الصوت</button><div class="status"><span class="dot"></span>جاهز لاستقبال الطلبات</div></div></div></header>
 <main>
-<div class="top"><div><h2>الطلبات</h2><p>الطلبات الجديدة هتظهر هنا بعد الربط.</p></div><button class="clear" onclick="clearOrders()">مسح الكل</button></div>
+<div class="top"><div><h2>إدارة الطلبات</h2><p>استقبال الطلبات ومتابعة إيراد اليوم.</p></div><button class="clear" onclick="clearOrders()">مسح الطلبات الحالية</button></div>
+<div class="stats">
+  <div class="stat"><small>طلبات اليوم</small><strong id="todayCount">0</strong></div>
+  <div class="stat"><small>إيراد اليوم</small><strong id="todayRevenue">0 ج.م</strong></div>
+  <div class="stat"><small>الطلبات الحالية</small><strong class="green" id="pendingCount">0</strong></div>
+</div>
+<div class="tabs"><button class="tab active" id="activeTab" onclick="showTab('active')">الطلبات الحالية</button><button class="tab" id="historyTab" onclick="showTab('history')">سجل طلبات اليوم</button></div>
 <section id="orders"></section>
+<section id="history" class="history" style="display:none"></section>
 </main>
 <div class="overlay" id="overlay"><div class="alert"><div class="bell">🔔</div><h2>طلب جديد!</h2><p id="alertText"></p><button class="receive" onclick="closeAlert()">استلام الطلب</button></div></div>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-  import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+  import { getDatabase, ref, onValue, remove, set } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDUmD3X5g2eSy5eL3U9R3IPZHnoWfpmYwI",
@@ -62,12 +77,16 @@ button{font-family:inherit;cursor:pointer}
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const ordersRef = ref(db, 'orders');
+  const salesRef = ref(db, 'sales');
 
   let orders = [];
+  let sales = [];
   let audioCtx = null;
   let soundEnabled = false;
   let knownIds = new Set();
   let firstSnapshot = true;
+  let currentTab = 'active';
+  let salesIds = new Set();
 
   function enableSound(){
     try{
@@ -85,108 +104,141 @@ button{font-family:inherit;cursor:pointer}
     try{
       audioCtx.resume();
       const now = audioCtx.currentTime;
-      [880, 660, 880].forEach((freq, index) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, now + index * 0.22);
-        gain.gain.exponentialRampToValueAtTime(0.22, now + index * 0.22 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.22 + 0.18);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now + index * 0.22);
-        osc.stop(now + index * 0.22 + 0.2);
+      [880,660,880].forEach((freq,index)=>{
+        const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+        osc.frequency.value=freq;
+        gain.gain.setValueAtTime(0.0001,now+index*.22);
+        gain.gain.exponentialRampToValueAtTime(.22,now+index*.22+.02);
+        gain.gain.exponentialRampToValueAtTime(.0001,now+index*.22+.18);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now+index*.22); osc.stop(now+index*.22+.2);
       });
     }catch(e){}
   }
 
   function formatTime(ts){
     if(!ts) return 'الآن';
-    const d = new Date(ts);
+    const d=new Date(Number(ts));
     if(Number.isNaN(d.getTime())) return 'الآن';
-    return d.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+    return d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
   }
 
-  function render(){
-    const box = document.getElementById("orders");
+  function formatDate(ts){
+    const d=new Date(Number(ts));
+    if(Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+  }
+
+  function sameDay(ts){
+    const d=new Date(Number(ts));
+    const n=new Date();
+    return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
+  }
+
+  function totalOf(o){
+    return Number(o.total ?? (o.items||[]).reduce((s,x)=>s+Number(x.price)*Number(x.qty),0));
+  }
+
+  function escapeHtml(v){
+    return String(v ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  }
+
+  function renderStats(){
+    const todaySales=sales.filter(o=>sameDay(o.createdAt||o.completedAt));
+    const count=todaySales.length;
+    const revenue=todaySales.reduce((s,o)=>s+totalOf(o),0);
+    document.getElementById('todayCount').textContent=count;
+    document.getElementById('todayRevenue').textContent=revenue.toLocaleString('ar-EG')+' ج.م';
+    document.getElementById('pendingCount').textContent=orders.length;
+  }
+
+  function renderOrders(){
+    const box=document.getElementById('orders');
     if(!orders.length){
-      box.innerHTML = '<div class="empty">☕<br><br>مفيش طلبات حاليًا</div>';
+      box.innerHTML='<div class="empty">☕<br><br>مفيش طلبات حالياً</div>';
       return;
     }
-
-    box.innerHTML = orders.map(o => {
-      const total = Number(o.total ?? (o.items || []).reduce((s,x)=>s + Number(x.price)*Number(x.qty),0));
-      return `<article class="order ${o.isNew ? 'new' : ''}">
-        <div class="head">
-          <div>
-            <div class="table">🍽️ ترابيزة ${o.table || '-'}</div>
-            <div class="time">${formatTime(o.createdAt)}</div>
-          </div>
-          <div class="badge">طلب جديد</div>
-        </div>
-        <div class="items">
-          ${(o.items || []).map(x => `<div class="item">
-            <div class="name">${x.name} × ${x.qty}</div>
-            <div class="price">${Number(x.price)*Number(x.qty)} ج.م</div>
-          </div>`).join("")}
-        </div>
-        <div class="foot">
-          <div class="total">الإجمالي: <span>${total} ج.م</span></div>
-          <button class="done" onclick="completeOrder('${o.id}')">تم تجهيز الطلب ✓</button>
-        </div>
+    box.innerHTML=orders.map(o=>{
+      const total=totalOf(o);
+      return `<article class="order ${o.isNew?'new':''}">
+        <div class="head"><div><div class="table">🍽️ ترابيزة ${escapeHtml(o.table||'-')}</div><div class="time">${formatDate(o.createdAt)} • ${formatTime(o.createdAt)}</div></div><div class="badge">طلب جديد</div></div>
+        <div class="items">${(o.items||[]).map(x=>`<div class="item"><div class="name">${escapeHtml(x.name)} × ${Number(x.qty)}</div><div class="price">${Number(x.price)*Number(x.qty)} ج.م</div></div>`).join('')}</div>
+        <div class="foot"><div class="total">الإجمالي: <span>${total} ج.م</span></div><div style="display:flex;gap:8px"><button class="print" onclick="printReceipt('${o.id}','active')">🖨️ إيصال</button><button class="done" onclick="completeOrder('${o.id}')">تم تجهيز الطلب ✓</button></div></div>
       </article>`;
-    }).join("");
+    }).join('');
   }
 
-  window.completeOrder = async function(id){
+  function renderHistory(){
+    const box=document.getElementById('history');
+    const today=sales.filter(o=>sameDay(o.createdAt||o.completedAt)).sort((a,b)=>Number(b.createdAt||b.completedAt)-Number(a.createdAt||a.completedAt));
+    if(!today.length){box.innerHTML='<div class="empty">📋<br><br>لسه مفيش طلبات النهارده</div>';return;}
+    box.innerHTML=today.map((o,i)=>`<div class="history-item"><div class="history-info"><strong>#${today.length-i}</strong><span>ترابيزة ${escapeHtml(o.table||'-')}</span><span class="time">${formatTime(o.createdAt||o.completedAt)}</span><span style="color:${o.status==='completed'?'#bfc8ad':'#e2c98e'}">${o.status==='completed'?'مكتمل':'قيد التجهيز'}</span></div><div style="display:flex;align-items:center;gap:10px"><span class="history-total">${totalOf(o)} ج.م</span><button class="print" onclick="printReceipt('${o.id}','sales')">🖨️</button></div></div>`).join('');
+  }
+
+  function render(){renderStats();renderOrders();renderHistory();}
+
+  window.showTab=function(tab){
+    currentTab=tab;
+    document.getElementById('orders').style.display=tab==='active'?'grid':'none';
+    document.getElementById('history').style.display=tab==='history'?'grid':'none';
+    document.getElementById('activeTab').classList.toggle('active',tab==='active');
+    document.getElementById('historyTab').classList.toggle('active',tab==='history');
+  };
+
+  window.completeOrder=async function(id){
+    const o=orders.find(x=>x.id===id);
+    if(!o) return;
     try{
-      await remove(ref(db, 'orders/' + id));
-    }catch(e){
-      alert('حصلت مشكلة في حذف الطلب.');
-    }
+      await set(ref(db,'sales/'+id),{...o,isNew:false,status:'completed',completedAt:Date.now()});
+      await remove(ref(db,'orders/'+id));
+    }catch(e){console.error(e);alert('حصلت مشكلة في تحديث حالة الطلب.');}
   };
 
-  window.clearOrders = async function(){
+  window.clearOrders=async function(){
     if(!orders.length) return;
-    if(confirm("متأكد إنك عايز تمسح كل الطلبات؟")){
-      try{
-        await remove(ordersRef);
-      }catch(e){
-        alert('حصلت مشكلة في مسح الطلبات.');
-      }
+    if(confirm('هتمسح الطلبات الحالية فقط. سجل الإيرادات وطلبات اليوم مش هيتحذف. متأكد؟')){
+      try{await remove(ordersRef);}catch(e){alert('حصلت مشكلة في مسح الطلبات.');}
     }
   };
 
-  window.closeAlert = function(){
-    document.getElementById("overlay").classList.remove("show");
-    orders.forEach(x => x.isNew = false);
-    render();
+  window.printReceipt=function(id,type){
+    const source=type==='sales'?sales:orders;
+    const o=source.find(x=>x.id===id);
+    if(!o) return;
+    const total=totalOf(o), time=o.completedAt||o.createdAt;
+    const items=(o.items||[]).map(x=>`<div class="receipt-row"><span>${escapeHtml(x.name)} × ${Number(x.qty)}</span><span>${Number(x.price)*Number(x.qty)} ج.م</span></div>`).join('');
+    document.getElementById('printArea').innerHTML=`<div class="receipt"><h1>V10 CAFE</h1><div style="text-align:center" class="muted">إيصال طلب</div><hr style="margin:14px 0;border:0;border-top:1px solid #ccc"><div class="receipt-row"><span>الترابيزة</span><span>${escapeHtml(o.table||'-')}</span></div><div class="receipt-row"><span>التاريخ</span><span>${formatDate(time)}</span></div><div class="receipt-row"><span>الوقت</span><span>${formatTime(time)}</span></div>${items}<div class="receipt-row receipt-total"><span>الإجمالي</span><span>${total} ج.م</span></div><p style="text-align:center;margin-top:20px" class="muted">شكراً لزيارتكم ❤️</p></div>`;
+    window.print();
   };
 
-  onValue(ordersRef, snapshot => {
-    const data = snapshot.val() || {};
-    const incoming = Object.entries(data).map(([id, o]) => ({...o, id}));
-    incoming.sort((a,b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+  window.closeAlert=function(){document.getElementById('overlay').classList.remove('show');orders.forEach(x=>x.isNew=false);render();};
 
+  onValue(ordersRef,snapshot=>{
+    const data=snapshot.val()||{};
+    const incoming=Object.entries(data).map(([id,o])=>({...o,id}));
+    incoming.sort((a,b)=>Number(b.createdAt||0)-Number(a.createdAt||0));
+    incoming.forEach(o=>{
+      if(!salesIds.has(o.id)){
+        set(ref(db,'sales/'+o.id),{...o,isNew:false,status:'new'}).catch(()=>{});
+      }
+    });
     if(!firstSnapshot){
-      const newOnes = incoming.filter(o => !knownIds.has(o.id));
-      if(newOnes.length){
-        const newest = newOnes[0];
-        newest.isNew = true;
-        document.getElementById("alertText").textContent = "وصل طلب جديد من ترابيزة " + (newest.table || '-');
-        document.getElementById("overlay").classList.add("show");
-        sound();
-      }
+      const newOnes=incoming.filter(o=>!knownIds.has(o.id));
+      if(newOnes.length){const newest=newOnes[0];newest.isNew=true;document.getElementById('alertText').textContent='وصل طلب جديد من ترابيزة '+(newest.table||'-');document.getElementById('overlay').classList.add('show');sound();}
     }
-
-    knownIds = new Set(incoming.map(o => o.id));
-    orders = incoming;
-    render();
-    firstSnapshot = false;
+    knownIds=new Set(incoming.map(o=>o.id));orders=incoming;render();firstSnapshot=false;
   });
 
-  document.getElementById('soundBtn').addEventListener('click', enableSound);
+  onValue(salesRef,snapshot=>{
+    const data=snapshot.val()||{};
+    sales=Object.entries(data).map(([id,o])=>({...o,id}));
+    salesIds=new Set(sales.map(o=>o.id));
+    render();
+  });
+
+  document.getElementById('soundBtn').addEventListener('click',enableSound);
   render();
 </script>
+<div id="printArea"></div>
 </body>
 </html>
