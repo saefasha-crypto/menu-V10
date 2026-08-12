@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>V10 Cafe - إيراد اليوم</title>
+<style>
+:root{--bg:#090b09;--panel:#111510;--olive:#66734b;--gold:#c9a45c;--cream:#f5f0e5;--muted:#a7aa9f;--line:rgba(245,240,229,.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:radial-gradient(circle at 50% -10%,rgba(102,115,75,.2),transparent 40%),#090b09;color:var(--cream);font-family:Arial,sans-serif}
+header{padding:18px;border-bottom:1px solid var(--line);background:#0b0d0b;position:sticky;top:0;z-index:5}
+.header{max-width:900px;margin:auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+h1{font-size:22px}.sub{color:var(--muted);font-size:12px;margin-top:4px}
+button{font-family:inherit;cursor:pointer}
+.clear{padding:9px 13px;border:1px solid rgba(201,164,92,.3);border-radius:10px;background:rgba(201,164,92,.06);color:#e2c98e;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+main{max-width:900px;margin:auto;padding:25px 15px}
+.top{margin-bottom:18px}
+.top h2{font-size:24px}.top p{color:var(--muted);font-size:13px;margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:0 0 22px}
+.stat{background:linear-gradient(135deg,#171c17,#0e110e);border:1px solid var(--line);border-radius:16px;padding:18px}
+.stat small{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}.stat strong{font-size:26px;color:#e2c98e}
+.empty{text-align:center;padding:70px 20px;border:1px dashed var(--line);border-radius:18px;color:var(--muted)}
+.history{display:grid;gap:10px}
+.history-item{background:#111510;border:1px solid var(--line);border-radius:14px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.history-info{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.seq{width:30px;height:30px;border-radius:50%;background:rgba(201,164,92,.12);color:#e2c98e;font-weight:bold;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.time{color:var(--muted);font-size:11px}
+.history-total{font-weight:bold;color:#e2c98e}
+.print{padding:8px 11px;border:1px solid rgba(201,164,92,.3);border-radius:9px;background:rgba(201,164,92,.06);color:#e2c98e}
+@media(max-width:550px){.stats{grid-template-columns:1fr}.history-item{align-items:flex-start}.history-info{flex-direction:column;align-items:flex-start;gap:4px}}
+
+/* ===== Thermal receipt print (small cashier printer) ===== */
+@page{size:80mm auto;margin:0}
+@media print{
+  body{background:#fff;color:#000}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+  .receipt{width:72mm;margin:0 auto;padding:3mm 2mm;font-family:'Courier New',monospace;color:#000}
+  .receipt h1{text-align:center;font-size:16px;letter-spacing:1px;margin-bottom:2px}
+  .receipt .muted{text-align:center;font-size:10px;color:#333;margin-bottom:6px}
+  .receipt hr{border:0;border-top:1px dashed #000;margin:6px 0}
+  .receipt-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+  .receipt-total{font-size:15px;font-weight:bold;border-top:1px dashed #000;margin-top:6px;padding-top:6px}
+  .receipt-foot{text-align:center;font-size:11px;margin-top:10px}
+}
+#printArea{display:none}
+</style>
+</head>
+<body>
+<header><div class="header">
+  <div><h1>V10 Cafe</h1><div class="sub">إيراد اليوم وسجل الطلبات</div></div>
+  <a class="clear" href="orders.html">☕ الطلبات الحالية</a>
+</div></header>
+<main>
+<div class="top"><h2>إيراد اليوم</h2><p>إجمالي الإيراد وعدد الطلبات بترتيب وصولها.</p></div>
+<div class="stats">
+  <div class="stat"><small>إجمالي إيراد اليوم</small><strong id="todayRevenue">0 ج.م</strong></div>
+  <div class="stat"><small>عدد أوردرات اليوم</small><strong id="todayCount">0</strong></div>
+</div>
+<section id="history" class="history"></section>
+</main>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUmD3X5g2eSy5eL3U9R3IPZHnoWfpmYwI",
+    authDomain: "coffee-v10.firebaseapp.com",
+    databaseURL: "https://coffee-v10-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "coffee-v10",
+    storageBucket: "coffee-v10.firebasestorage.app",
+    messagingSenderId: "1056868199469",
+    appId: "1:1056868199469:web:e9a14e13085daaadb99ca4",
+    measurementId: "G-YC445CVSKK"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const salesRef = ref(db, 'sales');
+
+  let sales = [];
+
+  function formatTime(ts){
+    if(!ts) return 'الآن';
+    const d=new Date(Number(ts));
+    if(Number.isNaN(d.getTime())) return 'الآن';
+    return d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function formatDate(ts){
+    const d=new Date(Number(ts));
+    if(Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+  }
+
+  function sameDay(ts){
+    const d=new Date(Number(ts));
+    const n=new Date();
+    return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
+  }
+
+  function totalOf(o){
+    return Number(o.total ?? (o.items||[]).reduce((s,x)=>s+Number(x.price)*Number(x.qty),0));
+  }
+
+  function escapeHtml(v){
+    return String(v ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  }
+
+  function render(){
+    const today=sales.filter(o=>sameDay(o.createdAt||o.completedAt)).sort((a,b)=>Number(a.createdAt||a.completedAt)-Number(b.createdAt||b.completedAt));
+    const revenue=today.reduce((s,o)=>s+totalOf(o),0);
+    document.getElementById('todayCount').textContent=today.length;
+    document.getElementById('todayRevenue').textContent=revenue.toLocaleString('ar-EG')+' ج.م';
+
+    const box=document.getElementById('history');
+    if(!today.length){box.innerHTML='<div class="empty">📋<br><br>لسه مفيش طلبات النهارده</div>';return;}
+    box.innerHTML=today.map((o,i)=>`<div class="history-item">
+      <div class="history-info">
+        <span class="seq">${i+1}</span>
+        <span>ترابيزة ${escapeHtml(o.table||'-')}</span>
+        <span class="time">${formatTime(o.createdAt||o.completedAt)}</span>
+        <span style="color:${o.status==='completed'?'#bfc8ad':'#e2c98e'}">${o.status==='completed'?'مكتمل':'قيد التجهيز'}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="history-total">${totalOf(o)} ج.م</span>
+        <button class="print" onclick="printReceipt('${o.id}')">🖨️</button>
+      </div>
+    </div>`).join('');
+  }
+
+  window.printReceipt=function(id){
+    const o=sales.find(x=>x.id===id);
+    if(!o) return;
+    const total=totalOf(o), time=o.completedAt||o.createdAt;
+    const items=(o.items||[]).map(x=>`<div class="receipt-row"><span>${escapeHtml(x.name)} × ${Number(x.qty)}</span><span>${Number(x.price)*Number(x.qty)} ج.م</span></div>`).join('');
+    document.getElementById('printArea').innerHTML=`<div class="receipt"><h1>V10 CAFE</h1><div class="muted">إيصال طلب</div><hr><div class="receipt-row"><span>الترابيزة</span><span>${escapeHtml(o.table||'-')}</span></div><div class="receipt-row"><span>التاريخ</span><span>${formatDate(time)}</span></div><div class="receipt-row"><span>الوقت</span><span>${formatTime(time)}</span></div><hr>${items}<div class="receipt-row receipt-total"><span>الإجمالي</span><span>${total} ج.م</span></div><p class="receipt-foot">شكراً لزيارتكم ❤️</p></div>`;
+    window.print();
+  };
+
+  onValue(salesRef,snapshot=>{
+    const data=snapshot.val()||{};
+    sales=Object.entries(data).map(([id,o])=>({...o,id}));
+    render();
+  });
+</script>
+<div id="printArea"></div>
+</body>
+</html>
